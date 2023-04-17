@@ -256,6 +256,7 @@ const Chat = (props) => {
             >
               Send
             </button>
+            
           </div>
         </div>
       </div>
