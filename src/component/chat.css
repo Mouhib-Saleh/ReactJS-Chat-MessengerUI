@@ -211,6 +211,7 @@ body {
 .messages .message .user {
     position: absolute;
     float: left;
+    min-width: 15vw;
     left: 0;
     top: -15px;
     font-size: 9px;
@@ -223,6 +224,11 @@ body {
     border-top: 6px solid rgba(0, 0, 0, .3);
     left: 0;
     border-right: 7px solid transparent;
+}
+.heading-msg {
+    text-align: center;
+   
+    font-size:12px; line-height: 1.2em; color: #999;
 }
 .messages .message .avatar {
     position: absolute;

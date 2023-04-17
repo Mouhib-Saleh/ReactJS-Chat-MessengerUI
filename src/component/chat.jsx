@@ -17,17 +17,20 @@ const Chat = (props) => {
   const [messages, setMessages] = useState(null);
   const [messagesR, setMessagesR] = useState(null);
   const [date, setDate] = useState();
-  const [activeUserId, setActiveUserId] = useState(null);
+  const [activeUserId, setActiveUserId] = useState({});
   const getUsers = async () => {
     const result = await axios.get("http://localhost:3001/api/user/all");
     return result.data.data;
   };
-  const handleClickUser = (userId) => {
-    setActiveUserId(userId);
-    const filteredMessages = messagesR.filter(msg => msg.reciver === userId || msg.sender === userId || msg.sender._id === userId);
+  const handleClickUser = (user) => {
+    setActiveUserId(user);
+    const filteredMessages = messagesR.filter(msg => msg.reciver === user._id || msg.sender === user._id || msg.sender._id === user._id);
     console.log(filteredMessages);
     setMessages(filteredMessages);
+    console.log(activeUserId._id);
+   
   };
+  console.log(activeUserId._id);
   const fetchData = async () => {
     let user = await getUsers();
     setUserById(user.find((user) => user._id === userPrompt));
@@ -62,6 +65,7 @@ const Chat = (props) => {
         return false;
       }
       setMessages((prevMessages) => [...prevMessages, data]);
+      setMessagesR((prevMessages) => [...prevMessages, data]);
       
     },
     [setMessages, userById._id]
@@ -92,13 +96,14 @@ const Chat = (props) => {
 
     const newMessage = {
       sender: userById._id,
-      reciver : activeUserId,
+      reciver : activeUserId._id,
       username: userById.name,
       message: inputValue,
       image: image,
     };
-    console.log(newMessage);
+    
     setMessages((prevMessages) => [...prevMessages, newMessage]);
+    setMessagesR((prevMessages) => [...prevMessages, newMessage]);
     setInputValue("");
     socket.emit("new-Course-message", newMessage);
     const hours = new Date().getHours();
@@ -161,8 +166,8 @@ const Chat = (props) => {
               <br></br>
               {users &&
                 users.map((user) => (
-                   <div key={user._id}   className={`user-box ${activeUserId === user._id ? "active" : ""}`}
-                   onClick={() => handleClickUser(user._id)} >
+                   <div key={user._id}   className={`user-box ${activeUserId._id === user._id ? "active" : ""}`}
+                   onClick={() => handleClickUser(user)} >
                     <div style={{display: "flex",gap: "10px",}} >
                       <img className="user-av"  alt="img"  src={`${user.image}`} />
                       <div  style={{ color: "grey",   }}  >
@@ -178,21 +183,37 @@ const Chat = (props) => {
               className="messages-content"
               style={{ overflowY: "scroll", marginLeft: -3 }}
             >
-              {messages && messages.map((msg, index) =>
-                msg.sender._id === userById._id || msg.sender === userById._id ? (
-                  <div key={index} className="message message-personal new">
-                    <div className="message-text">{msg.message}</div>
-                    <div className="timestamp">{date}</div>
-                  </div>
-                ) :   (msg.reciver === userById._id ) ?
-                  <div key={index} className="message message new">
-                    <img className="avatar" alt="img" src={`${msg.sender.image}`} />
-                    <div className="user">{msg.username}</div>
-                    <div className="message-text">{msg.message}</div>
-                    <div className="timestamp2">{date}</div>
-                  </div> : null
-                
-              )}
+                { activeUserId._id   ? (
+
+messages && messages.map((msg, index) =>
+  msg.sender._id === userById._id || msg.sender === userById._id ? (
+    <div key={index} className="message message-personal new">
+      <div className="message-text">{msg.message}</div>
+      <div className="timestamp">{date}</div>
+    </div>
+  ) :   (msg.reciver === userById._id  && (msg.sender._id === activeUserId._id || msg.sender === activeUserId._id) ) ?
+    <div key={index} className="message message new">
+      <img className="avatar" alt="img" src={`${activeUserId.image}`} />
+      <div className="user">{msg.username}</div>
+      <div className="message-text">{msg.message}</div>
+      <div className="timestamp2">{date}</div>
+    </div> : null
+  
+)
+
+
+
+                ) 
+            :
+            (<p className="heading-msg">
+            Welcome to our course chat!<br /> Please keep the conversation respectful
+             <br />
+             and engaging. choose a user  <br />
+             to engage in a conversation!
+          </p>)
+            }
+             
+            
 
               <div
                 ref={messagesEndRef}
