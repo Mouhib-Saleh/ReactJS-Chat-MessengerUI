@@ -9,7 +9,7 @@ const Chat = (props) => {
   const [users, setUsers] = useState(null);
   const [usersF, setUsersF] = useState(null);
   const { isVisible } = props;
-  const [userById ,setUserById] = useState({});
+  const [userById, setUserById] = useState({});
   const messagesEndRef = useRef(null);
   const [randomNumber] = useState(Math.floor(Math.random() * 100) + 1);
   const [image] = useState(`https://picsum.photos/200/300?${randomNumber}`);
@@ -24,11 +24,15 @@ const Chat = (props) => {
   };
   const handleClickUser = (user) => {
     setActiveUserId(user);
-    const filteredMessages = messagesR.filter(msg => msg.reciver === user._id || msg.sender === user._id || msg.sender._id === user._id);
+    const filteredMessages = messagesR.filter(
+      (msg) =>
+        msg.reciver === user._id ||
+        msg.sender === user._id ||
+        msg.sender._id === user._id
+    );
     console.log(filteredMessages);
     setMessages(filteredMessages);
     console.log(activeUserId._id);
-   
   };
   console.log(activeUserId._id);
   const fetchData = async () => {
@@ -36,21 +40,22 @@ const Chat = (props) => {
     setUserById(user.find((user) => user._id === userPrompt));
     setMessages(await getMessages(userPrompt));
     setMessagesR(await getMessages(userPrompt));
-    
-    const filteredUsers = user.filter(user => user._id !== userPrompt); // filter users array based on userById state
+
+    const filteredUsers = user.filter((user) => user._id !== userPrompt); // filter users array based on userById state
     setUsers(filteredUsers);
     setUsersF(filteredUsers);
   };
- 
+
   const getMessages = async (id) => {
-    const result = await axios.get(`http://localhost:3001/api/Messages/get/${id}`);
+    const result = await axios.get(
+      `http://localhost:3001/api/Messages/get/${id}`
+    );
     console.log(result.data);
     return result.data;
   };
 
   useEffect(() => {
     fetchData();
-   
   }, []);
   function formatDate(dateString) {
     const date = new Date(dateString);
@@ -66,7 +71,6 @@ const Chat = (props) => {
       }
       setMessages((prevMessages) => [...prevMessages, data]);
       setMessagesR((prevMessages) => [...prevMessages, data]);
-      
     },
     [setMessages, userById._id]
   );
@@ -96,12 +100,12 @@ const Chat = (props) => {
 
     const newMessage = {
       sender: userById._id,
-      reciver : activeUserId._id,
+      reciver: activeUserId._id,
       username: userById.name,
       message: inputValue,
       image: image,
     };
-    
+
     setMessages((prevMessages) => [...prevMessages, newMessage]);
     setMessagesR((prevMessages) => [...prevMessages, newMessage]);
     setInputValue("");
@@ -121,15 +125,14 @@ const Chat = (props) => {
       inline: "nearest",
     });
   }, [messages]);
- 
+
   const handleSearch = (event) => {
     const searchQuery = event.target.value.trim().toLowerCase(); // get the search input and convert to lowercase
     const filteredUsers = searchQuery
-      ? usersF.filter(user => user.name.toLowerCase().includes(searchQuery)) // filter users array based on search input
+      ? usersF.filter((user) => user.name.toLowerCase().includes(searchQuery)) // filter users array based on search input
       : [...usersF]; // reset the users array if search input is empty
     setUsers(filteredUsers); // update the users state with filtered array
-  }
-
+  };
 
   return (
     <div className={isVisible ? "" : "invisible"}>
@@ -155,7 +158,7 @@ const Chat = (props) => {
                 height: "90%",
               }}
             >
-              <form className="search-form" >
+              <form className="search-form">
                 <input
                   type="text"
                   className="search-box"
@@ -166,13 +169,20 @@ const Chat = (props) => {
               <br></br>
               {users &&
                 users.map((user) => (
-                   <div key={user._id}   className={`user-box ${activeUserId._id === user._id ? "active" : ""}`}
-                   onClick={() => handleClickUser(user)} >
-                    <div style={{display: "flex",gap: "10px",}} >
-                      <img className="user-av"  alt="img"  src={`${user.image}`} />
-                      <div  style={{ color: "grey",   }}  >
-                        {user.name}
-                      </div>
+                  <div
+                    key={user._id}
+                    className={`user-box ${
+                      activeUserId._id === user._id ? "active" : ""
+                    }`}
+                    onClick={() => handleClickUser(user)}
+                  >
+                    <div style={{ display: "flex", gap: "10px" }}>
+                      <img
+                        className="user-av"
+                        alt="img"
+                        src={`${user.image}`}
+                      />
+                      <div style={{ color: "grey" }}>{user.name}</div>
                     </div>
                   </div>
                 ))}
@@ -183,37 +193,39 @@ const Chat = (props) => {
               className="messages-content"
               style={{ overflowY: "scroll", marginLeft: -3 }}
             >
-                { activeUserId._id   ? (
-
-messages && messages.map((msg, index) =>
-  msg.sender._id === userById._id || msg.sender === userById._id ? (
-    <div key={index} className="message message-personal new">
-      <div className="message-text">{msg.message}</div>
-      <div className="timestamp">{date}</div>
-    </div>
-  ) :   (msg.reciver === userById._id  && (msg.sender._id === activeUserId._id || msg.sender === activeUserId._id) ) ?
-    <div key={index} className="message message new">
-      <img className="avatar" alt="img" src={`${activeUserId.image}`} />
-      <div className="user">{msg.username}</div>
-      <div className="message-text">{msg.message}</div>
-      <div className="timestamp2">{date}</div>
-    </div> : null
-  
-)
-
-
-
-                ) 
-            :
-            (<p className="heading-msg">
-            Welcome to our course chat!<br /> Please keep the conversation respectful
-             <br />
-             and engaging. choose a user  <br />
-             to engage in a conversation!
-          </p>)
-            }
-             
-            
+              {activeUserId._id ? (
+                messages &&
+                messages.map((msg, index) =>
+                  msg.sender._id === userById._id ||
+                  msg.sender === userById._id ? (
+                    <div key={index} className="message message-personal new">
+                      <div className="message-text">{msg.message}</div>
+                      <div className="timestamp">{date}</div>
+                    </div>
+                  ) : msg.reciver === userById._id &&
+                    (msg.sender._id === activeUserId._id ||
+                      msg.sender === activeUserId._id) ? (
+                    <div key={index} className="message message new">
+                      <img
+                        className="avatar"
+                        alt="img"
+                        src={`${activeUserId.image}`}
+                      />
+                      <div className="user">{msg.username}</div>
+                      <div className="message-text">{msg.message}</div>
+                      <div className="timestamp2">{date}</div>
+                    </div>
+                  ) : null
+                )
+              ) : (
+                <p className="heading-msg">
+                  Welcome to our course chat!
+                  <br /> Please keep the conversation respectful
+                  <br />
+                  and engaging. choose a user <br />
+                  to engage in a conversation!
+                </p>
+              )}
 
               <div
                 ref={messagesEndRef}
