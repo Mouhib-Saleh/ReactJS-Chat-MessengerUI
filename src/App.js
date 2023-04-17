@@ -5,7 +5,7 @@ import { ChakraProvider } from '@chakra-ui/react'
 function App() {
   return ( 
     <ChakraProvider theme={{}}>
-        <ChatWidget user={"name"} ChatApi={"http://localhost:3001"}  />
+        <ChatWidget  userID={"641355efd1279125243759f3"}  />
         </ChakraProvider>
   );
 }

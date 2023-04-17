@@ -13,7 +13,7 @@ const ChatWidget = (props) => {
 
   return (  
     <div>
-        <Chat isVisible={showDiv} ChatApi={props.ChatApi}/>     
+        <Chat isVisible={showDiv} userID={props.userID}/>     
         <div className="button-container">
         <button className="message-button"  onClick={handleClickShow}>
            <ChatIcon/>
