@@ -1,69 +1,64 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import "./chat.css";
+import { useToast,Badge } from '@chakra-ui/react';
 import io from "socket.io-client";
 import axios from "axios";
-
 const userPrompt = prompt("Please enter your id: ");
-const socket = io("http://localhost:3001");
+const socket = io("http://localhost:3002");
+
 const Chat = (props) => {
+  // variables declaration
   const [users, setUsers] = useState(null);
   const [usersF, setUsersF] = useState(null);
   const { isVisible } = props;
   const [userById, setUserById] = useState({});
   const messagesEndRef = useRef(null);
-  const [randomNumber] = useState(Math.floor(Math.random() * 100) + 1);
-  const [image] = useState(`https://picsum.photos/200/300?${randomNumber}`);
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState(null);
   const [messagesR, setMessagesR] = useState(null);
   const [date, setDate] = useState();
+  const toast = useToast()
   const [activeUserId, setActiveUserId] = useState({});
+  // get users methode
   const getUsers = async () => {
     const result = await axios.get("http://localhost:3001/api/user/all");
     return result.data.data;
   };
+  // set the active chat tab with the selected user and filter the messages array based on the selected user
   const handleClickUser = (user) => {
     setActiveUserId(user);
+    const userResetNotification = users.find((userR) => userR._id === user._id);
+    if (userResetNotification) {
+      userResetNotification.hasNewMessage =0;
+    }
     const filteredMessages = messagesR.filter(
       (msg) =>
         msg.reciver === user._id ||
         msg.sender === user._id ||
         msg.sender._id === user._id
     );
-    console.log(filteredMessages);
-    setMessages(filteredMessages);
-    console.log(activeUserId._id);
+    setMessages(filteredMessages);  
   };
-  console.log(activeUserId._id);
+  // fetch data and messages from the database methode called upon loading the component
   const fetchData = async () => {
     let user = await getUsers();
     setUserById(user.find((user) => user._id === userPrompt));
     setMessages(await getMessages(userPrompt));
     setMessagesR(await getMessages(userPrompt));
-
-    const filteredUsers = user.filter((user) => user._id !== userPrompt); // filter users array based on userById state
+    user.forEach(user => {
+      user.hasNewMessage = 0;
+    });
+    const filteredUsers = user.filter((user) => user._id !== userPrompt);
     setUsers(filteredUsers);
     setUsersF(filteredUsers);
   };
-
+ // get messages async function that's called in the fetch data function
   const getMessages = async (id) => {
     const result = await axios.get(
       `http://localhost:3001/api/Messages/get/${id}`
     );
-    console.log(result.data);
     return result.data;
   };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-  function formatDate(dateString) {
-    const date = new Date(dateString);
-    const day = date.getDate();
-    const month = date.getMonth() + 1;
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  }
+  // handle the new message event triggered by the socket
   const handleMessage = useCallback(
     (data) => {
       if (data.sender === userById._id) {
@@ -71,41 +66,64 @@ const Chat = (props) => {
       }
       setMessages((prevMessages) => [...prevMessages, data]);
       setMessagesR((prevMessages) => [...prevMessages, data]);
+      if (data.sender != activeUserId._id && data.reciver === userById._id) {
+        toast({
+          position: "top-right",
+          variant: "solid",
+          title: "Message received.",
+          description: "You have received a new message from " + data.username,
+          duration: 5000,
+          isClosable: true,
+        });
+        const user = users.find((user) => user._id === data.sender);
+        if (user) {
+          user.hasNewMessage++;
+        }
+      }
     },
-    [setMessages, userById._id]
+    [setMessages, userById._id, activeUserId._id, users]
   );
-
+  
+  useEffect(() => {
+    fetchData();
+  }, []);
+  // useEffect to handle the socket event
   useEffect(() => {
     socket.on("new-Course-message", handleMessage);
     return () => {
       socket.off("new-Course-message", handleMessage);
     };
   }, [handleMessage, socket]);
-
+  // useEffect to scroll to the bottom of the chat
+  useEffect(() => {
+    messagesEndRef.current.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+      inline: "nearest",
+    });
+  }, [messages]);
+  // handle the keydown event (Pressing Enter) to send the message
   function handleKeyDown(event) {
     if (event.keyCode === 13) {
       insertMessage();
       setInputValue("");
     }
   }
-
+  // handle the change event of the messages input
   function handleChange(event) {
     setInputValue(event.target.value);
   }
-
+  // insert the message in the messages array and send it to the server using the socket
   function insertMessage() {
     if (inputValue.trim() === "") {
       return false;
     }
-
     const newMessage = {
       sender: userById._id,
       reciver: activeUserId._id,
       username: userById.name,
       message: inputValue,
-      image: image,
     };
-
     setMessages((prevMessages) => [...prevMessages, newMessage]);
     setMessagesR((prevMessages) => [...prevMessages, newMessage]);
     setInputValue("");
@@ -114,18 +132,11 @@ const Chat = (props) => {
     const minutes = new Date().getMinutes();
     setDate(hours + ":" + minutes);
   }
+  // handle the click event of the send button
   function handleClick() {
     insertMessage();
   }
-
-  useEffect(() => {
-    messagesEndRef.current.scrollIntoView({
-      behavior: "smooth",
-      block: "end",
-      inline: "nearest",
-    });
-  }, [messages]);
-
+  // handle the search input change event
   const handleSearch = (event) => {
     const searchQuery = event.target.value.trim().toLowerCase(); // get the search input and convert to lowercase
     const filteredUsers = searchQuery
@@ -176,12 +187,41 @@ const Chat = (props) => {
                     }`}
                     onClick={() => handleClickUser(user)}
                   >
-                    <div style={{ display: "flex", gap: "10px" }}>
-                      <img
-                        className="user-av"
-                        alt="img"
-                        src={`${user.image}`}
-                      />
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "10px",
+                        justifyContent: "center",
+                        alignContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "relative",
+                          display: "inline-block",
+                        }}
+                      >
+                        {" "}
+                        <img
+                          className="user-av"
+                          alt="img"
+                          src={`${user.image}`}
+                        />{" "}
+                        {user.hasNewMessage > 0 && (
+                          <Badge
+                            colorScheme="teal"
+                            position="absolute"
+                            borderRadius="100%"
+                            fontSize="0.8em"
+                            height="2vh"
+                            top="-3px"
+                            right="-5px"
+                          >
+                            {user.hasNewMessage}
+                          </Badge>
+                        )}
+                      </div>
                       <div style={{ color: "grey" }}>{user.name}</div>
                     </div>
                   </div>
@@ -226,7 +266,6 @@ const Chat = (props) => {
                   to engage in a conversation!
                 </p>
               )}
-
               <div
                 ref={messagesEndRef}
                 style={{ float: "left", clear: "both" }}
@@ -256,12 +295,10 @@ const Chat = (props) => {
             >
               Send
             </button>
-            
           </div>
         </div>
       </div>
     </div>
   );
 };
-
 export default Chat;
